@@ -7,6 +7,8 @@ A very simple Image-Viewer with Raylib
 
 ## Functionality
 The Coculus has the following functionality
+- Use rightclick for panning
+- Use mousewheel to zoom
 - Press 'V' to vertically mirror the image
 - Press 'H' to horizontally mirror the image
 - Press 'R' to rotate 90°
