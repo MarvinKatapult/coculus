@@ -38,7 +38,7 @@ int main( int argc, char * argv[] ) {
     InitWindow( WIN_WIDTH, WIN_HEIGHT, "Coculus - Image Viewer" );
     loaded_image = LoadImage( argv[1] );
     cam.offset = (Vector2){ 0, 0 };
-    cam.target = (Vector2){ (float)loaded_image.width / 2, (float)loaded_image.height / 2 };
+    cam.target = (Vector2){ 0, 0 };
     cam.zoom = 1.f;
 
     loaded_texture = LoadTextureFromImage( loaded_image );
