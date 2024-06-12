@@ -4,6 +4,7 @@
 #include "./raylib/src/raymath.h"
 
 static Texture2D loaded_texture;
+static Image loaded_image;
 static bool dragging;
 static Vector2 image_offset;
 static Vector2 mouse_anchor;
@@ -11,6 +12,9 @@ static Camera2D cam;
 
 #define WIN_WIDTH   1600
 #define WIN_HEIGHT  900
+
+#define ZOOM_SPEED 0.1f
+#define BACKGROUND_COLOR (Color){ 25, 25, 25, 255 }
 
 bool checkFilePath( const char * fpath ) {
     FILE * fp = fopen( fpath, "r" );
@@ -27,36 +31,43 @@ Vector2 getDraggingTextPos() {
 }
 
 void handleInput() {
-    if ( IsMouseButtonPressed( MOUSE_BUTTON_RIGHT ) ) {
-        dragging = true;
-        mouse_anchor = Vector2Scale( GetMousePosition(), 1/cam.zoom );
-    }
-    if ( IsMouseButtonReleased( MOUSE_BUTTON_RIGHT ) ) {
-        dragging = false;
-        image_offset = getDraggingTextPos();
-    }
+    if ( IsMouseButtonDown( MOUSE_BUTTON_RIGHT ) ) {
+        if ( dragging ) {
+            Vector2 mousePosition = GetMousePosition();
+            Vector2 delta = Vector2Subtract( mousePosition, mouse_anchor );
+            cam.target = Vector2Subtract( cam.target, Vector2Scale(delta, 1.0f / cam.zoom ) );
+            mouse_anchor = mousePosition;
+        } else {
+            dragging = true;
+            mouse_anchor = GetMousePosition();
+        }
+    } else dragging = false;
 
-    if ( GetMouseWheelMove() > 0 || ( GetMouseWheelMove() < 0 && cam.zoom - 0.1f > 0 ) ) cam.zoom += (float)GetMouseWheelMove() * 0.1f;
+    if ( GetMouseWheelMove() != 0 ) {
+        cam.zoom += GetMouseWheelMove() * ZOOM_SPEED;
+        if ( cam.zoom < 0 ) cam.zoom = 0.1f;
+    }
 
     if ( IsKeyPressed( KEY_R ) ) {
-        Image img = LoadImageFromTexture( loaded_texture );
-        ImageRotate( &img, 90 );
-        loaded_texture = LoadTextureFromImage( img );
-        UnloadImage( img );
+        ImageRotate( &loaded_image, 90 );
+        UnloadTexture( loaded_texture );
+        loaded_texture = LoadTextureFromImage( loaded_image );
     }
 
     if ( IsKeyPressed( KEY_V ) ) {
-        Image img = LoadImageFromTexture( loaded_texture );
-        ImageFlipVertical( &img );
-        loaded_texture = LoadTextureFromImage( img );
-        UnloadImage( img );
+        ImageFlipVertical( &loaded_image );
+        UnloadTexture( loaded_texture );
+        loaded_texture = LoadTextureFromImage( loaded_image );
     }
 
     if ( IsKeyPressed( KEY_H ) ) {
-        Image img = LoadImageFromTexture( loaded_texture );
-        ImageFlipHorizontal( &img );
-        loaded_texture = LoadTextureFromImage( img );
-        UnloadImage( img );
+        ImageFlipHorizontal( &loaded_image );
+        UnloadTexture( loaded_texture );
+        loaded_texture = LoadTextureFromImage( loaded_image );
+    }
+
+    if ( IsKeyDown( KEY_LEFT_CONTROL ) && IsKeyPressed( KEY_S ) ) {
+        ExportImage( loaded_image, "./out.png" );
     }
 }
 
@@ -73,27 +84,21 @@ int main( int argc, char * argv[] ) {
     }
 
     InitWindow( WIN_WIDTH, WIN_HEIGHT, "Coculus - Image Viewer" );
-    Image loaded_image = LoadImage( argv[1] );
-    cam.offset = (Vector2){ WIN_WIDTH/2 - loaded_image.width/2, WIN_HEIGHT/2 - loaded_image.height/2 };
+    loaded_image = LoadImage( argv[1] );
+    cam.target = (Vector2){ (float)loaded_image.width / 2, (float)loaded_image.height / 2 };
+    cam.offset = (Vector2){ 0, 0 };
     cam.zoom = 1.f;
 
     loaded_texture = LoadTextureFromImage( loaded_image );
-    UnloadImage( loaded_image );
 
-    Vector2 text_pos = { 0 };
     while( !WindowShouldClose() ) {
         handleInput();
-        if ( dragging ) {
-            text_pos = getDraggingTextPos();
-        } else {
-            text_pos = image_offset;
-        }
 
         BeginDrawing();
             BeginMode2D( cam );
 
-                ClearBackground( (Color){ 25, 25, 25, 255 } );
-                DrawTextureV( loaded_texture, text_pos, WHITE );
+                ClearBackground( BACKGROUND_COLOR );
+                DrawTexture( loaded_texture, 0, 0, WHITE );
 
             EndMode2D();
         EndDrawing();
